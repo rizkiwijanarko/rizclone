@@ -1,0 +1,4 @@
+.env
+.venv\
+knowledge-base/raw/*
+.idea
