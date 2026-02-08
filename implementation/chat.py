@@ -11,7 +11,7 @@ load_dotenv(override=True)
 
 MODEL = "openai/gpt-4.1-nano"
 DB_NAME = str(Path(__file__).parent.parent / "preprocessed_db")
-KNOWLEDGE_BASE_PATH = Path(__file__).parent.parent / "knowledge-base"
+KNOWLEDGE_BASE_PATH = Path(__file__).parent.parent / "knowledge-base/preprocessed"
 SUMMARIES_PATH = Path(__file__).parent.parent / "summaries"
 
 collection_name = "docs"

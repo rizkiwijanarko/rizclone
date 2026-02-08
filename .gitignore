@@ -2,3 +2,4 @@
 .venv\
 knowledge-base/raw/*
 .idea
+knowledge-base/preprocessed/*

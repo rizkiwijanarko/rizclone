@@ -20,4 +20,5 @@ dependencies = [
     "pywidgets>=0.0.1",
     "tenacity>=9.1.2",
     "tqdm>=4.67.2",
+    "unstructured[docx,pdf]>=0.18.31",
 ]

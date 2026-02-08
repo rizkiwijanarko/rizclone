@@ -16,7 +16,7 @@ MODEL = "openai/gpt-4.1-nano"
 DB_NAME = str(Path(__file__).parent.parent / "preprocessed_db")
 collection_name = "docs"
 embedding_model = "text-embedding-3-large"
-KNOWLEDGE_BASE_PATH = Path(__file__).parent.parent / "knowledge-base"
+KNOWLEDGE_BASE_PATH = Path(__file__).parent.parent / "knowledge-base/preprocessed"
 AVERAGE_CHUNK_SIZE = 100
 wait = wait_exponential(multiplier=1, min=10, max=240)
 
@@ -55,17 +55,29 @@ class Chunks(BaseModel):
 
 
 def fetch_documents():
-    """A homemade version of the LangChain DirectoryLoader"""
+    """A homemade version of the LangChain DirectoryLoader
 
+    Supports two layouts:
+      1) knowledge-base/preprocessed/<type>/*.md
+      2) knowledge-base/preprocessed/*.md
+    """
     documents = []
 
-    for folder in KNOWLEDGE_BASE_PATH.iterdir():
-        doc_type = folder.name
-        for file in folder.rglob("*.md"):
-            with open(file, "r", encoding="utf-8") as f:
-                documents.append({"type": doc_type, "source": file.as_posix(), "text": f.read()})
+    if not KNOWLEDGE_BASE_PATH.exists():
+        raise FileNotFoundError(f"Knowledge base path not found: {KNOWLEDGE_BASE_PATH}")
 
-    print(f"Loaded {len(documents)} documents")
+    md_files = sorted(KNOWLEDGE_BASE_PATH.rglob("*.md"))
+
+    for file in md_files:
+        rel = file.relative_to(KNOWLEDGE_BASE_PATH)
+        # If the file is under a subfolder, use that folder as the type; otherwise use "default"
+        doc_type = rel.parts[0] if len(rel.parts) > 1 else "default"
+
+        text = file.read_text(encoding="utf-8")
+        if text.strip():
+            documents.append({"type": doc_type, "source": file.as_posix(), "text": text})
+
+    print(f"Loaded {len(documents)} documents from {KNOWLEDGE_BASE_PATH}")
     return documents
 
 
@@ -74,11 +86,11 @@ def make_prompt(document):
     return f"""
 You take a document and you split the document into overlapping chunks for a KnowledgeBase.
 
-The document is from the shared drive of a company called Insurellm.
+The document is from the shared drive of Kharisma Rizki Wijanarko, a computer science freshgraduate.
 The document is of type: {document["type"]}
 The document has been retrieved from: {document["source"]}
 
-A chatbot will use these chunks to answer questions about the company.
+A chatbot will use these chunks to answer questions about Rizki's career experience.
 You should divide up the document as you see fit, being sure that the entire document is returned across the chunks - don't leave anything out.
 This document should probably be split into at least {how_many} chunks, but you can have more or less as appropriate, ensuring that there are individual chunks to answer specific questions.
 There should be overlap between the chunks as appropriate; typically about 25% overlap or about 50 words, so you have the same text in multiple chunks for best retrieval results.
@@ -121,19 +133,37 @@ def create_chunks(documents):
     return chunks
 
 
-def create_embeddings(chunks):
+def create_embeddings(chunks, batch_size: int = 128):
     chroma = PersistentClient(path=DB_NAME)
     if collection_name in [c.name for c in chroma.list_collections()]:
         chroma.delete_collection(collection_name)
 
-    texts = [chunk.page_content for chunk in chunks]
-    emb = openai.embeddings.create(model=embedding_model, input=texts).data
-    vectors = [e.embedding for e in emb]
+    # Filter/normalize texts so we never send an empty/invalid input payload
+    filtered = []
+    for chunk in chunks:
+        text = (chunk.page_content or "").strip()
+        if text:
+            filtered.append((chunk, text))
+
+    if not filtered:
+        raise ValueError(
+            "No non-empty chunk texts were produced, so embeddings cannot be created. "
+            "Check that documents were loaded and chunking returned content."
+        )
+
+    kept_chunks = [c for (c, _) in filtered]
+    texts = [t for (_, t) in filtered]
+
+    vectors = []
+    for i in range(0, len(texts), batch_size):
+        batch_texts = texts[i : i + batch_size]
+        emb = openai.embeddings.create(model=embedding_model, input=batch_texts).data
+        vectors.extend([e.embedding for e in emb])
 
     collection = chroma.get_or_create_collection(collection_name)
 
-    ids = [str(i) for i in range(len(chunks))]
-    metas = [chunk.metadata for chunk in chunks]
+    ids = [str(i) for i in range(len(kept_chunks))]
+    metas = [chunk.metadata for chunk in kept_chunks]
 
     collection.add(ids=ids, embeddings=vectors, documents=texts, metadatas=metas)
     print(f"Vectorstore created with {collection.count()} documents")
@@ -141,6 +171,15 @@ def create_embeddings(chunks):
 
 if __name__ == "__main__":
     documents = fetch_documents()
+    if not documents:
+        raise RuntimeError(
+            f"No documents found under {KNOWLEDGE_BASE_PATH}. "
+            "Make sure there are .md files there (either directly or inside subfolders)."
+        )
+
     chunks = create_chunks(documents)
+    if not chunks:
+        raise RuntimeError("Chunking produced 0 chunks. Check the chunking step and model responses.")
+
     create_embeddings(chunks)
     print("Ingestion complete")
