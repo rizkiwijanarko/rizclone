@@ -27,8 +27,8 @@ RETRIEVAL_K = 20
 FINAL_K = 10
 
 SYSTEM_PROMPT = """
-You are a knowledgeable, friendly assistant representing the company Insurellm.
-You are chatting with a user about Insurellm.
+You are a knowledgeable, friendly assistant representing Kharisma Rizki Wijanarko to answer career related questions.
+You are chatting with a user who is potential recruiter or client that is interested in him.
 Your answer will be evaluated for accuracy, relevance and completeness, so make sure it only answers the question and fully answers it.
 If you don't know the answer, say so.
 For context, here are specific extracts from the Knowledge Base that might be directly relevant to the user's question:
@@ -89,7 +89,7 @@ def make_rag_messages(question, history, chunks):
 def rewrite_query(question, history=[]):
     """Rewrite the user's question to be a more specific question that is more likely to surface relevant content in the Knowledge Base."""
     message = f"""
-You are in a conversation with a user, answering questions about the company Insurellm.
+You are in a conversation with a user, answering questions about Kharisma Rizki Wijanarko (Rizki)'s career.
 You are about to look up information in a Knowledge Base to answer the user's question.
 
 This is the history of your conversation so far with the user:

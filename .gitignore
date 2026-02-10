@@ -1,5 +1,6 @@
 .env
-.venv\
+.venv/
 knowledge-base/raw/*
 .idea
 knowledge-base/preprocessed/*
+preprocessed_db/
