@@ -7,10 +7,15 @@ load_dotenv(override=True)
 
 
 def format_context(context):
-    result = "<h2 style='color: #ff7800;'>Relevant Context</h2>\n\n"
+    if not context:
+        return "No relevant context found."
+    
+    result = "### 📚 Relevant Context\n\n"
     for doc in context:
-        result += f"<span style='color: #ff7800;'>Source: {doc.metadata['source']}</span>\n\n"
-        result += doc.page_content + "\n\n"
+        source = doc.metadata.get('source', 'Unknown Source')
+        result += f"**Source: {source}**\n\n"
+        result += f"{doc.page_content}\n\n"
+        result += "---\n\n"
     return result
 
 
@@ -54,32 +59,53 @@ def main():
         new_history = history + [{"role": "user", "content": message}]
         return "", new_history
 
-    theme = gr.themes.Soft(font=["Inter", "system-ui", "sans-serif"])
+    theme = gr.themes.Soft(
+        primary_hue="orange",
+        secondary_hue="slate",
+        font=["Inter", "system-ui", "sans-serif"]
+    )
 
-    with gr.Blocks(title="Insurellm Expert Assistant") as ui:
-        gr.Markdown("# 🏢 Insurellm Expert Assistant\nAsk me anything about Insurellm!")
+    with gr.Blocks(title="Kharisma Rizki Wijanarko - AI Assistant") as ui:
+        gr.Markdown(
+            """
+            # 👨‍💻 Kharisma Rizki Wijanarko - AI Assistant
+            Welcome! I am an AI assistant trained to answer questions about Rizki's career, background, skills, and experience.
+            """
+        )
 
         with gr.Row():
-            with gr.Column(scale=1):
+            with gr.Column(scale=2):
                 chatbot = gr.Chatbot(
-                    label="💬 Conversation", height=600, buttons=["copy"]
+                    label="💬 Conversation",
+                    height=550,
+                    show_label=False,
+                    avatar_images=(None, "https://api.dicebear.com/7.x/avataaars/svg?seed=Rizki"),
                 )
                 with gr.Row():
                     message = gr.Textbox(
-                        label="Your Question",
-                        placeholder="Ask anything about Insurellm...",
+                        placeholder="Ask me about Rizki's projects, skills, or experience...",
                         show_label=False,
                         scale=7,
+                        container=False
                     )
-                    submit_btn = gr.Button("Send", scale=1)
+                    submit_btn = gr.Button("Send", variant="primary", scale=1)
+                
+                gr.Examples(
+                    examples=[
+                        "What is Rizki's professional background?",
+                        "Tell me about Rizki's technical skills.",
+                        "What kind of projects has Rizki worked on?",
+                        "How can I contact Rizki?",
+                    ],
+                    inputs=message,
+                    label="Try asking:"
+                )
 
             with gr.Column(scale=1):
-                context_markdown = gr.Markdown(
-                    label="📚 Retrieved Context",
-                    value="*Retrieved context will appear here*",
-                    container=True,
-                    height=600,
-                )
+                with gr.Accordion("🔍 Behind the scenes: Retrieved Context", open=False):
+                    context_markdown = gr.Markdown(
+                        value="*Retrieved context will appear here when you ask a question*",
+                    )
 
         submit_btn.click(
             put_message_in_chatbot, inputs=[message, chatbot], outputs=[message, chatbot]

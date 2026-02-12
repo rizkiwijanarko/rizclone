@@ -1,3 +1,7 @@
+import json
+import os
+import requests
+from datetime import datetime
 from openai import OpenAI
 from dotenv import load_dotenv
 from chromadb import PersistentClient
@@ -6,13 +10,14 @@ from pydantic import BaseModel, Field
 from pathlib import Path
 from tenacity import retry, wait_exponential
 
-
 load_dotenv(override=True)
 
 MODEL = "openai/gpt-4.1-nano"
 DB_NAME = str(Path(__file__).parent.parent / "preprocessed_db")
 KNOWLEDGE_BASE_PATH = Path(__file__).parent.parent / "knowledge-base/preprocessed"
 SUMMARIES_PATH = Path(__file__).parent.parent / "summaries"
+UNKNOWN_QUESTIONS_PATH = Path(__file__).parent / "unknown_questions.json"
+USER_DETAILS_PATH = Path(__file__).parent / "user_details.json"
 
 collection_name = "docs"
 embedding_model = "text-embedding-3-large"
@@ -27,16 +32,119 @@ RETRIEVAL_K = 20
 FINAL_K = 10
 
 SYSTEM_PROMPT = """
-You are a knowledgeable, friendly assistant representing Kharisma Rizki Wijanarko to answer career related questions.
-You are chatting with a user who is potential recruiter or client that is interested in him.
-Your answer will be evaluated for accuracy, relevance and completeness, so make sure it only answers the question and fully answers it.
-If you don't know the answer, say so.
-For context, here are specific extracts from the Knowledge Base that might be directly relevant to the user's question:
-{context}
-
-With this context, please answer the user's question. Be accurate, relevant and complete.
+You are acting as Kharisma Rizki Wijanarko. You are answering questions on Rizki's website, \
+particularly questions related to Rizki's career, background, skills and experience. \
+Your responsibility is to represent Rizki for interactions on the website as faithfully as possible. Answer using only the provided context. \
+If missing, say you don’t know. \
+You are given a summary of Rizki's background, LinkedIn profile, CV, etc, which you can use to answer questions. \
+Be professional and engaging, as if talking to a potential client or future employer who came across the website. \
+If you don't know the answer to any question, use your record_unknown_question tool to record the question that you couldn't answer, even if it's about something trivial or unrelated to career. \
+If the user is engaging in discussion, try to steer them towards getting in touch via email; ask for their email and record it using your record_user_details tool.
 """
 
+def send_telegram_notification(message):
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    if not token or not chat_id:
+        print("Telegram credentials missing. Skipping notification.")
+        return
+    
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {"chat_id": chat_id, "text": message}
+    try:
+        requests.post(url, json=payload, timeout=10)
+    except Exception as e:
+        print(f"Failed to send Telegram notification: {e}")
+
+def record_unknown_question(question: str, user_details: str = None):
+    """Record a question that the AI couldn't answer and send a notification."""
+    timestamp = datetime.now().isoformat()
+    entry = {"question": question, "timestamp": timestamp}
+    if user_details:
+        entry["user_details"] = user_details
+    
+    # Save to local JSON
+    data = []
+    if UNKNOWN_QUESTIONS_PATH.exists():
+        try:
+            with open(UNKNOWN_QUESTIONS_PATH, "r") as f:
+                data = json.load(f)
+        except Exception:
+            data = []
+    
+    data.append(entry)
+    with open(UNKNOWN_QUESTIONS_PATH, "w") as f:
+        json.dump(data, f, indent=4)
+    
+    # Send notification
+    notif_message = f"New Unknown Question: {question}"
+    if user_details:
+        notif_message += f"\nUser Details: {user_details}"
+    send_telegram_notification(notif_message)
+    return "Question recorded successfully."
+
+def record_user_details(details: str):
+    """Record user details (like name, email, or interest) and send a notification."""
+    timestamp = datetime.now().isoformat()
+    entry = {"details": details, "timestamp": timestamp}
+    
+    # Save to local JSON
+    data = []
+    if USER_DETAILS_PATH.exists():
+        try:
+            with open(USER_DETAILS_PATH, "r") as f:
+                data = json.load(f)
+        except Exception:
+            data = []
+    
+    data.append(entry)
+    with open(USER_DETAILS_PATH, "w") as f:
+        json.dump(data, f, indent=4)
+    
+    # Send notification
+    send_telegram_notification(f"New User Details: {details}")
+    return "User details recorded successfully."
+
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "record_unknown_question",
+            "description": "Record a question that the AI does not have the information to answer.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "question": {
+                        "type": "string",
+                        "description": "The user's question that couldn't be answered."
+                    },
+                    "user_details": {
+                        "type": "string",
+                        "description": "Any user details known (e.g., name or email) to associate with this question."
+                    }
+                },
+                "required": ["question"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "record_user_details",
+            "description": "Record user details such as name, email, or other contact information provided by the user.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "details": {
+                        "type": "string",
+                        "description": "The details provided by the user (e.g., 'Name: John Doe, Email: john@example.com')."
+                    }
+                },
+                "required": ["details"]
+            }
+        }
+    }
+]
 
 class Result(BaseModel):
     page_content: str
@@ -140,5 +248,36 @@ def answer_question(question: str, history: list[dict] = []) -> tuple[str, list]
     """
     chunks = fetch_context(question)
     messages = make_rag_messages(question, history, chunks)
-    response = completion(model=MODEL, messages=messages)
-    return response.choices[0].message.content, chunks
+    
+    response = completion(model=MODEL, messages=messages, tools=tools)
+    message = response.choices[0].message
+    
+    if message.tool_calls:
+        for tool_call in message.tool_calls:
+            if tool_call.function.name == "record_unknown_question":
+                args = json.loads(tool_call.function.arguments)
+                record_unknown_question(args["question"], args.get("user_details"))
+            elif tool_call.function.name == "record_user_details":
+                args = json.loads(tool_call.function.arguments)
+                record_user_details(args["details"])
+
+        messages.append(message)
+        for tool_call in message.tool_calls:
+            tool_name = tool_call.function.name
+            if tool_name == "record_unknown_question":
+                tool_response = "Question recorded successfully. I will notify Rizki."
+            elif tool_name == "record_user_details":
+                tool_response = "User details recorded successfully. Rizki will be in touch if needed."
+            else:
+                tool_response = "Success."
+
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "name": tool_name,
+                "content": tool_response
+            })
+        response = completion(model=MODEL, messages=messages)
+        return response.choices[0].message.content, chunks
+
+    return message.content, chunks
