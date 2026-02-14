@@ -1,4 +1,7 @@
 # RizClone - Kharisma Rizki Wijanarko AI Assistant
+<p align="center">
+  <img src="asset/app_preview.png" alt="RizClone App Preview" width="800">
+</p>
 
 RizClone is an advanced RAG (Retrieval-Augmented Generation) based AI assistant designed to represent **Kharisma Rizki Wijanarko (Rizki)**. It answers questions about his career, background, skills, and experience by retrieving relevant information from a curated knowledge base of his LinkedIn profile, CV, and other documents.
 
