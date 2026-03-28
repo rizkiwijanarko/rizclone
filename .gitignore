@@ -3,6 +3,5 @@
 knowledge-base/raw/*
 .idea
 knowledge-base/preprocessed/*
-preprocessed_db/
 __pycache__
 implementation\user_details.json
