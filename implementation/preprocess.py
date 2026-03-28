@@ -100,8 +100,8 @@ def normalize_markdown(md: str) -> str:
     return "\n\n".join(lines)
 
 def main():
-    raw_dir = Path("knowledge-base/raw")
-    preprocessed_dir = Path("knowledge-base/preprocessed")
+    raw_dir = Path(__file__).parent.parent / "knowledge-base/raw"
+    preprocessed_dir = Path(__file__).parent.parent / "knowledge-base/preprocessed"
     preprocessed_dir.mkdir(parents=True, exist_ok=True)
 
     pdf_files = list(raw_dir.glob("*.pdf"))

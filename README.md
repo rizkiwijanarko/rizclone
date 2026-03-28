@@ -38,9 +38,6 @@ rizclone/
 │   ├── chat.py           # Core RAG logic, query rewriting, and reranking
 │   ├── ingest.py         # Document chunking and vectorstore creation
 │   └── preprocess.py     # PDF to Markdown preprocessing logic
-├── evaluation/           
-│   ├── eval.py           # Evaluation pipeline (MRR, nDCG, Answer quality)
-│   └── test.jsonl        # Test dataset for evaluation
 ├── knowledge-base/       
 │   ├── raw/              # Original PDF documents
 │   └── preprocessed/     # Extracted Markdown files
@@ -82,28 +79,22 @@ Fill in your API keys:
 ### Step 1: Preprocess Documents
 Place your PDF files in `knowledge-base/raw/` and run:
 ```bash
-python implementation/preprocess.py
+uv run implementation/preprocess.py
 ```
 This converts PDFs to cleaned Markdown in `knowledge-base/preprocessed/`.
 
 ### Step 2: Ingest into Vector Database
 Generate embeddings and create the ChromaDB index:
 ```bash
-python implementation/ingest.py
+uv run implementation/ingest.py
 ```
 
 ### Step 3: Run the Application
 Launch the interactive AI Assistant:
 ```bash
-python app.py
+uv run app.py
 ```
 The app will be available at `http://localhost:7860`.
-
-### Step 4: Evaluation (Optional)
-To evaluate the retrieval and answer performance:
-```bash
-python evaluation/eval.py
-```
 
 ## 🤝 Contributing
 Feel free to open issues or submit pull requests for any improvements!
