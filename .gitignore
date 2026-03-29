@@ -5,3 +5,4 @@ knowledge-base/raw/*
 knowledge-base/preprocessed/*
 __pycache__
 implementation\user_details.json
+.gradio

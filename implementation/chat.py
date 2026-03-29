@@ -254,17 +254,17 @@ def make_rag_messages(question: str, history: list[dict], chunks: list[Chunk]) -
 def rewrite_query(question: str, history: list[dict] = []) -> str:
     """Rewrite the user's question into a concise knowledge base search query."""
     message = f"""
-You are in a conversation about Kharisma Rizki Wijanarko (Rizki)'s career.
-You are about to search a Knowledge Base to answer the user's question.
+    You are in a conversation about Kharisma Rizki Wijanarko (Rizki)'s career.
+    You are about to search a Knowledge Base to answer the user's question.
 
-Conversation history:
-{history}
+    Conversation history:
+    {history}
 
-User's current question:
-{question}
+    User's current question:
+    {question}
 
-Respond ONLY with a short, precise query to search the Knowledge Base. Nothing else.
-"""
+    Respond ONLY with a short, precise query to search the Knowledge Base. Nothing else.
+    """
     response = completion(model=MODEL, messages=[{"role": "system", "content": message}])
     return response.choices[0].message.content
 
@@ -302,6 +302,36 @@ def fetch_context(original_question: str) -> list[Chunk]:
     reranked = rerank(original_question, merged)
     return reranked[:FINAL_K]
 
+def route_query(question: str, history: list[dict] = []) -> str:
+    prompt = f"""
+    You are an AI system router.
+
+    Decide the best action based on user intent.
+
+    Available actions:
+    - rag → use knowledge base for career/background questions
+    - contact → user is providing or asking to provide contact details
+    - unknown → cannot be answered confidently
+    - direct → casual/simple/general conversation
+
+    Prioritize:
+    - contact if user shows intent to connect
+    - rag if question is about Rizki
+    - unknown if outside knowledge scope
+
+    Conversation:
+    {history}
+
+    User:
+    {question}
+
+    Return ONLY one label: rag, contact, unknown, or direct.
+    """
+    response = completion(
+        model=MODEL,
+        messages=[{"role": "system", "content": prompt}]
+    )
+    return response.choices[0].message.content.strip().lower()
 
 # --- Main entry point ---
 
@@ -312,10 +342,32 @@ def answer_question(question: str, history: list[dict] = []) -> tuple[str, list[
     Handles multi-turn tool calls in a loop until the model produces a final text response.
     """
     t0 = time.time()
-    chunks = fetch_context(question)
-    logger.info(f"[RAG] Context retrieved in {time.time() - t0:.2f}s ({len(chunks)} chunks)")
+    route = route_query(question, history)
+    logger.info(f"[ROUTER] Route: {route}")
 
-    messages = make_rag_messages(question, history, chunks)
+    if route == "rag":
+        chunks = fetch_context(question)
+        messages = make_rag_messages(question, history, chunks)
+
+    elif route == "contact":
+        chunks = []
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT.format(context="")},
+            *history,
+            {"role": "user", "content": question}
+        ]
+
+    elif route == "unknown":
+        record_unknown_question(question)
+        return "That's a great question — I don't have that information yet, but I've recorded it."
+
+    else: 
+        chunks = []
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT.format(context="")},
+            *history,
+            {"role": "user", "content": question}
+        ]
 
     # Tool call loop — handles chained tool calls safely
     for _ in range(5): 
