@@ -69,7 +69,7 @@ def main():
         gr.Markdown(
             """
             # 👨‍💻 Kharisma Rizki Wijanarko - AI Assistant
-            Welcome! I am an AI assistant trained to answer questions about Rizki's career, background, skills, and experience.
+            Welcome! I’m an AI assistant that can answer questions about Rizki’s career, background, skills, and projects—and even help you connect with him for opportunities or collaborations.
             """
         )
 

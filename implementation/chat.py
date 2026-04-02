@@ -31,6 +31,7 @@ FINAL_K = 10
 RETRY_WAIT = wait_exponential(multiplier=1, min=10, max=240)
 RETRY_STOP = stop_after_attempt(4)
 
+collection = None
 openai_client = OpenAI()
 chroma = PersistentClient(path=DB_NAME)
 collection = chroma.get_or_create_collection(COLLECTION_NAME)
@@ -285,7 +286,6 @@ def fetch_context_unranked(question: str) -> list[Chunk]:
 def merge_chunks(primary: list[Chunk], secondary: list[Chunk]) -> list[Chunk]:
     seen = {chunk.page_content for chunk in primary}
     return primary + [chunk for chunk in secondary if chunk.page_content not in seen]
-
 
 def fetch_context(original_question: str) -> list[Chunk]:
     """Dual-query retrieval with query rewriting and reranking."""

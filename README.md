@@ -1,4 +1,6 @@
 # RizClone - Kharisma Rizki Wijanarko AI Assistant
+[![Hugging Face Space](https://img.shields.io/badge/🤗%20Hugging%20Face-Live%20Demo-yellow)](https://huggingface.co/spaces/Raiquia/Rizclone)
+
 <p align="center">
   <img src="asset/app_preview.png" alt="RizClone App Preview" width="800">
 </p>
@@ -19,6 +21,39 @@ RizClone is an advanced RAG (Retrieval-Augmented Generation) based AI assistant 
 - **Automated Document Ingestion**: Preprocesses PDF documents (CVs, Transcripts, etc.) into clean Markdown and ingests them into a ChromaDB vector store.
 - **Evaluation Suite**: Tools for calculating retrieval metrics like MRR (Mean Reciprocal Rank) and nDCG (Normalized Discounted Cumulative Gain), and evaluating answer quality.
 
+## System Architecture
+
+```mermaid
+flowchart TD
+    A[User Input] --> B[Gradio Interface]
+
+    B --> C[Router (LLM-based Intent Classification)]
+
+    C -->|rag| D[RAG Pipeline]
+    C -->|contact| E[Tool: Record User Details]
+    C -->|unknown| F[Tool: Record Unknown Question]
+    C -->|direct| G[Direct LLM Response]
+
+    %% RAG Pipeline
+    D --> H[Query Rewriting]
+    H --> I[Embedding Generation]
+    I --> J[Chroma Vector DB]
+    J --> K[Top-K Retrieval]
+    K --> L[LLM Reranker]
+    L --> M[Context Construction]
+    M --> N[LLM Response]
+
+    %% Tools
+    E --> O[Store JSON]
+    E --> P[Telegram Notification]
+
+    F --> Q[Store JSON]
+    F --> P
+
+    %% Final Output
+    N --> R[Response to User]
+    G --> R
+```
 ## Technical Stack
 
 - **LLM Engine**: [LiteLLM](https://github.com/BerriAI/litellm) (supporting `openai/gpt-4.1-nano`)

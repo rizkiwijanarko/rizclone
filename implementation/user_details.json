@@ -4,5 +4,23 @@
         "use_case": "personal",
         "message_to_rizki": "I want you to join on my hackathon project",
         "timestamp": "2026-03-29T03:30:31.268047"
+    },
+    {
+        "contact": "rizkiwijanarko4@gmail.com",
+        "use_case": "company",
+        "message_to_rizki": "Interested in discussing a project with PT. Mencari Cinta Sejati.",
+        "timestamp": "2026-03-30T18:01:53.109962"
+    },
+    {
+        "contact": "rizkiwijanarko4@gmail.com",
+        "use_case": "company",
+        "message_to_rizki": "Interested in discussing a project with PT. Mencari Cinta Sejati.",
+        "timestamp": "2026-03-30T18:01:53.994743"
+    },
+    {
+        "contact": "rizkiwijanarko@students.unnes.ac.id",
+        "use_case": "company",
+        "message_to_rizki": "I'd like to discuss with you about our project at pt. mencari cinta sejati.",
+        "timestamp": "2026-03-30T18:02:51.692829"
     }
 ]
