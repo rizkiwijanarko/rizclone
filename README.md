@@ -1,102 +1,189 @@
-# RizClone - Kharisma Rizki Wijanarko AI Assistant
-[![Hugging Face Space](https://img.shields.io/badge/🤗%20Hugging%20Face-Live%20Demo-yellow)](https://huggingface.co/spaces/Raiquia/Rizclone)
+# RizClone - Agentic AI Assistant for Kharisma Rizki Wijanarko
+
+[![Live Demo](https://img.shields.io/badge/🚀%20Live%20Demo-Rizclone-blueviolet)](https://huggingface.co/spaces/Raiquia/Rizclone)
+[![Hugging Face Space](https://img.shields.io/badge/🤗%20Hugging%20Face-Space-yellow)](https://huggingface.co/spaces/Raiquia/Rizclone)
+
+> 💡 This project demonstrates an **agentic LLM system** with dynamic routing, tool orchestration, and advanced retrieval techniques.
+> ⚠️ Note: The demo may take ~10–30 seconds to load initially due to cold start (free hosting).
 
 <p align="center">
   <img src="asset/app_preview.png" alt="RizClone App Preview" width="800">
 </p>
 
-RizClone is an advanced RAG (Retrieval-Augmented Generation) based AI assistant designed to represent **Kharisma Rizki Wijanarko (Rizki)**. It answers questions about his career, background, skills, and experience by retrieving relevant information from a curated knowledge base of his LinkedIn profile, CV, and other documents.
+---
 
-## Features
+## 🎯 Overview
 
-- **RAG-based Question Answering**: Uses a vector database to provide accurate, context-aware answers based on Rizki's professional background.
-- **Advanced Retrieval Pipeline**:
-    - **Query Rewriting**: Automatically refines user questions to improve search relevance.
-    - **Hybrid Retrieval**: Combines original and rewritten query results for better coverage.
-    - **LLM-based Reranking**: Intelligently ranks retrieved context chunks to ensure the most relevant information is used.
-- **Tool Integration**:
-    - **Unknown Question Tracking**: Automatically records questions the AI cannot answer and notifies Rizki via Telegram.
-    - **Lead Capture**: Records user contact details and interests for future follow-up.
-- **Interactive Web UI**: Built with Gradio, featuring a professional orange/slate theme and real-time "behind-the-scenes" retrieval visualization.
-- **Automated Document Ingestion**: Preprocesses PDF documents (CVs, Transcripts, etc.) into clean Markdown and ingests them into a ChromaDB vector store.
-- **Evaluation Suite**: Tools for calculating retrieval metrics like MRR (Mean Reciprocal Rank) and nDCG (Normalized Discounted Cumulative Gain), and evaluating answer quality.
+RizClone is an **agentic RAG-based AI assistant** designed to represent **Kharisma Rizki Wijanarko (Rizki)**.
 
-## Technical Stack
+Unlike traditional chatbots, this system uses **LLM-based intent routing** to dynamically decide between:
 
-- **LLM Engine**: [LiteLLM](https://github.com/BerriAI/litellm) (supporting `openai/gpt-4.1-nano`)
-- **Embeddings**: OpenAI `text-embedding-3-large`
-- **Vector Database**: [ChromaDB](https://www.trychroma.com/)
-- **Preprocessing**: [Unstructured](https://unstructured.io/) (for PDF to Markdown conversion)
-- **UI Framework**: [Gradio](https://gradio.app/)
-- **Language**: Python 3.12+
-- **Dependency Management**: `uv` (recommended) or `pip`
+* retrieval-augmented generation (RAG)
+* tool invocation
+* direct responses
 
-## Project Structure
+It answers questions about Rizki’s career, background, skills, and experience using a curated knowledge base (CV, LinkedIn, and supporting documents), while also supporting real-world workflows such as lead capture and notification.
 
-```text
+---
+
+## 🧠 System Architecture
+
+<p align="center">
+  <img src="asset/architecture.png" width="800">
+</p>
+
+---
+
+## ⚙️ Key System Capabilities
+
+* 🔀 **LLM-based Routing (Agentic Behavior)**
+  Dynamically classifies user intent and routes queries to RAG, tools, or direct responses.
+
+* 📚 **Advanced RAG Pipeline**
+
+  * Query rewriting
+  * Dual-query hybrid retrieval
+  * LLM-based reranking
+
+* 🧰 **Tool-Oriented Architecture**
+
+  * Unknown question logging
+  * Automated lead capture (contact + intent)
+  * Telegram notifications
+
+* 🧠 **Persistent Memory**
+  Stores interactions and logs in structured JSON.
+
+* 🌐 **Interactive Interface**
+  Built with Gradio with real-time retrieval visualization.
+
+
+---
+
+## 🧩 Technical Stack
+
+* **LLM Engine**: LiteLLM (`openai/gpt-4.1-nano`)
+* **Embeddings**: OpenAI `text-embedding-3-large`
+* **Vector Database**: ChromaDB
+* **Preprocessing**: Unstructured
+* **UI Framework**: Gradio
+* **Language**: Python 3.12+
+* **Dependency Management**: uv / pip
+
+---
+
+## 📁 Project Structure
+
+```
 rizclone/
-├── app.py                # Main Gradio application
-├── implementation/       
-│   ├── chat.py           # Core RAG logic, query rewriting, and reranking
-│   ├── ingest.py         # Document chunking and vectorstore creation
-│   └── preprocess.py     # PDF to Markdown preprocessing logic
-├── knowledge-base/       
-│   ├── raw/              # Original PDF documents
-│   └── preprocessed/     # Extracted Markdown files
-├── preprocessed_db/      # ChromaDB persistent storage
-├── pyproject.toml        # Project dependencies
-└── .env.example          # Template for environment variables
+├── app.py
+├── implementation/
+│   ├── chat.py
+│   ├── ingest.py
+│   └── preprocess.py
+├── knowledge-base/
+│   ├── raw/
+│   └── preprocessed/
+├── preprocessed_db/
+├── pyproject.toml
+└── .env.example
 ```
 
-## Setup & Installation
+---
+
+## ⚙️ Setup & Installation
 
 ### 1. Prerequisites
-- Python 3.12 or higher.
-- `uv` installed (recommended: `pip install uv`).
 
-### 2. Clone the Repository
-```bash
-git clone <repository-url>
+* Python 3.12+
+* uv (recommended)
+
+Install uv:
+
+```
+pip install uv
+```
+
+---
+
+### 2. Clone Repository
+
+```
+git clone https://github.com/rizkiwijanarko/rizclone.git
 cd rizclone
 ```
 
+---
+
 ### 3. Install Dependencies
-```bash
+
+```
 uv sync
 ```
 
-### 4. Configure Environment Variables
-Create a `.env` file from the example:
-```bash
+---
+
+### 4. Configure Environment
+
+```
 cp .env.example .env
 ```
-Fill in your API keys:
-- `OPENAI_API_KEY`: For embeddings and LLM.
-- `GEMINI_API_KEY`: (If using Gemini models via LiteLLM).
-- `HF_TOKEN`: (If using HuggingFace models).
-- `TELEGRAM_BOT_TOKEN` & `TELEGRAM_CHAT_ID`: For notifications when unknown questions are asked.
 
-## Usage
+Fill in:
 
-### Step 1: Preprocess Documents
-Place your PDF files in `knowledge-base/raw/` and run:
-```bash
+* OPENAI_API_KEY
+* GEMINI_API_KEY (optional)
+* HF_TOKEN (optional)
+* TELEGRAM_BOT_TOKEN
+* TELEGRAM_CHAT_ID
+
+---
+
+## 🚀 Usage
+
+### 1. Preprocess Documents
+
+```
 uv run implementation/preprocess.py
 ```
-This converts PDFs to cleaned Markdown in `knowledge-base/preprocessed/`.
 
-### Step 2: Ingest into Vector Database
-Generate embeddings and create the ChromaDB index:
-```bash
+---
+
+### 2. Ingest into Vector Database
+
+```
 uv run implementation/ingest.py
 ```
 
-### Step 3: Run the Application
-Launch the interactive AI Assistant:
-```bash
+---
+
+### 3. Run Application
+
+```
 uv run app.py
 ```
-The app will be available at `http://localhost:7860`.
+
+Access:
+
+```
+http://localhost:7860
+```
+
+---
+
+## 🎯 Motivation
+
+This project explores how modern LLM systems go beyond static Q&A by incorporating:
+
+* decision-making (agentic routing)
+* tool usage
+* persistent memory
+* retrieval optimization
+
+It simulates a real-world AI assistant capable of interacting with recruiters or clients.
+
+---
 
 ## 🤝 Contributing
-Feel free to open issues or submit pull requests for any improvements!
+
+Contributions, issues, and suggestions are welcome!
